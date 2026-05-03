@@ -45,8 +45,8 @@ else
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          go-ipxe-admin
-# Required-Start:    $remote_fs $syslog
-# Required-Stop:     $remote_fs $syslog
+# Required-Start:    $$remote_fs $$syslog
+# Required-Stop:     $$remote_fs $$syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: go-ipxe-admin
@@ -59,7 +59,7 @@ PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME="/etc/init.d/$NAME"
 
 # Exit on not found
-[ -x "$DAEMON" ] || exit 0
+[ -x "$$DAEMON" ] || exit 0
 
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
@@ -69,36 +69,36 @@ SCRIPTNAME="/etc/init.d/$NAME"
 
 # Start the service
 start_service() {
-    start_daemon "$DAEMON"
+    start_daemon "$$DAEMON"
 }
 
 # Stop the service
 stop_service() {
-    stop_daemon "$DAEMON"
+    stop_daemon "$$DAEMON"
 }
 
 case "$1" in
     start)
-        [ "$VERBOSE" != no ] && log_daemon_msg "Starting $NAME" "$NAME"
+        [ "$$VERBOSE" != no ] && log_daemon_msg "Starting $$NAME" "$$NAME"
         start_service
         log_end_msg $?
         ;;
     stop)
-        [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $NAME" "$NAME"
+        [ "$$VERBOSE" != no ] && log_daemon_msg "Stopping $$NAME" "$$NAME"
         stop_service
         log_end_msg $?
         ;;
     restart|force-reload)
-        log_daemon_msg "Restarting $NAME" "$NAME"
+        log_daemon_msg "Restarting $$NAME" "$$NAME"
         stop_service
         start_service
         log_end_msg $?
         ;;
     status)
-        status_of_proc "$DAEMON" "$NAME" && exit 0 || exit 4
+        status_of_proc "$$DAEMON" "$$NAME" && exit 0 || exit 4
         ;;
     *)
-        echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|status}"
+        echo "Usage: $$SCRIPTNAME {start|stop|restart|force-reload|status}"
         exit 1
         ;;
 esac
