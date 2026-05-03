@@ -1,0 +1,13 @@
+{
+  "id": "c59d5280-3a3c-4c38-aa41-4b3849d3c3de",
+  "name": "Debian",
+  "variables": [
+    {
+      "name": "debian_version",
+      "type": "string",
+      "options": "",
+      "default": "trixie"
+    }
+  ],
+  "content": "#!ipxe\n# Logic: [arch] [detect] [set]\necho \"Detecting architecture...\"\n\n# Default to i386\nset arch i386\n\n# Detect x86_64\ncpuid --ext 29 \u0026\u0026 set arch amd64 ||\n\n# Detect ARM64\niseq ${buildarch} arm64 \u0026\u0026 set arch arm64 ||\n\necho \"Target architecture identified as: ${arch}\"\n\n# Netboot.xyz recommended variables\nset debian_version {{ .debian_version }}\nset mirror http://deb.debian.org\nset base_dir debian\nset mirrorcfg mirror/suite=${debian_version}\nset preseedurl http://192.168.69.1:8080/a/4b0f5cd7-2b1c-40fd-aa19-0ecbd6c34fca/debian-pressed.cfg\n\n# Construct directory path\nset base-url ${mirror}/${base_dir}/dists/${debian_version}/main/installer-${arch}/current/images/netboot/debian-installer/${arch}\n\n# Clear previous images from memory\nimgfree\n\n# Loading components\necho \"Fetching Debian kernel for ${arch}...\"\n# Localization passed via kernel args to prevent initial prompts\nkernel ${base-url}/linux auto=true priority=critical locale=de_DE.UTF-8 keymap=de-latin1-nodeadkeys console-setup/ask_detect=false ${mirrorcfg} preseed/url=${preseedurl} interface=auto hostname=debian-${arch} domain=local.lan initrd=initrd.gz -- quiet || goto error\n\necho \"Fetching initrd...\"\ninitrd ${base-url}/initrd.gz || goto error\n\n# Execution\necho \"Booting installer...\"\nboot || goto error\n\n:error\necho \"[ERROR] Script failed! Check network/URL. Dropping to shell.\"\nshell\nexit 1"
+}

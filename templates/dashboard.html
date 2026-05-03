@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPXE Administrator</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body x-data="appData()" x-init="initApp()">
+    <nav class="glass-nav">
+        <div class="nav-content">
+            <h1>iPXE Admin</h1>
+            <div class="tabs">
+                <button :class="{active: tab === 'deployments'}" @click="tab = 'deployments'">Deployments</button>
+                <button :class="{active: tab === 'templates'}" @click="tab = 'templates'">Templates</button>
+                <button :class="{active: tab === 'assets'}" @click="tab = 'assets'">Assets</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Deployments Tab -->
+        <section x-show="tab === 'deployments'">
+            <div class="header-action">
+                <h2>Active Deployments</h2>
+                <button class="btn btn-primary" @click="openDeploymentModal()">+ New Deployment</button>
+            </div>
+            
+            <div class="grid">
+                <template x-for="d in deployments" :key="d.ip">
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h3 x-text="d.ip"></h3>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn-icon" @click="editDeployment(d)">✎</button>
+                                <button class="btn-icon btn-danger" @click="deleteDeployment(d.ip)">✕</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p style="margin-top: 0;">
+                                <strong>Template:</strong> <span x-text="getTemplateName(d.template_id)"></span>
+                                <template x-if="d.once"><span class="badge" style="background: rgba(239, 68, 68, 0.2); border-color: var(--danger); color: #fca5a5; margin-left: 0.5rem;">Once</span></template>
+                                <template x-if="d.timeout > 0"><span class="badge" style="background: rgba(234, 179, 8, 0.2); border-color: #eab308; color: #fde047; margin-left: 0.5rem;">TTL: <span x-text="d.timeout"></span>m</span></template>
+                            </p>
+                            <div class="vars-list">
+                                <template x-for="(val, key) in d.variables">
+                                    <div class="badge"><span x-text="key"></span>: <span x-text="val"></span></div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="deployments.length === 0" class="empty-state">No active deployments.</div>
+            </div>
+        </section>
+
+        <!-- Templates Tab -->
+        <section x-show="tab === 'templates'" style="display: none;">
+            <div class="header-action">
+                <h2>Templates</h2>
+                <button class="btn btn-primary" @click="openTemplateModal()">+ New Template</button>
+            </div>
+            
+            <div class="grid">
+                <template x-for="t in templates" :key="t.id">
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h3 x-text="t.name"></h3>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn-icon" @click="editTemplate(t)">✎</button>
+                                <button class="btn-icon btn-danger" @click="deleteTemplate(t.id)">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="templates.length === 0" class="empty-state">No templates configured.</div>
+            </div>
+        </section>
+
+        <!-- Assets Tab -->
+        <section x-show="tab === 'assets'" style="display: none;">
+            <div class="header-action">
+                <h2>Assets</h2>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button class="btn btn-primary" @click="openAssetTextModal()">+ New Text Asset</button>
+                    <div style="display:inline-block; position:relative; overflow:hidden;">
+                        <button class="btn">Upload Asset</button>
+                        <input type="file" @change="uploadAsset($event)" style="font-size:100px; position:absolute; left:0; top:0; opacity:0; cursor:pointer; height:100%;" />
+                    </div>
+                </div>
+            </div>
+            
+            <div class="list">
+                <template x-for="a in assets" :key="a.id">
+                    <div class="list-item glass-card">
+                        <div class="item-info">
+                            <h3 x-text="a.filename"></h3>
+                            <div class="url-badge">
+                                URL: <code x-text="window.location.origin + '/a/' + a.id + '/' + a.filename"></code>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <template x-if="a.mime_type === 'text/plain'">
+                                <button class="btn-icon" @click="editAsset(a)">✎</button>
+                            </template>
+                            <button class="btn-icon btn-danger" @click="deleteAsset(a.id)">✕</button>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="assets.length === 0" class="empty-state">No assets uploaded.</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal-backdrop" x-show="modals.deployment" style="display: none;">
+        <div class="modal glass-card" @click.away="modals.deployment = false">
+            <h2>New Deployment</h2>
+            <form @submit.prevent="saveDeployment">
+                <div class="form-group">
+                    <label>IP Address</label>
+                    <input type="text" x-model="forms.deployment.ip" required placeholder="192.168.1.100" list="recent-ips">
+                    <datalist id="recent-ips">
+                        <template x-for="client in recentClients" :key="client.ip">
+                            <option :value="client.ip"></option>
+                        </template>
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label>Template</label>
+                    <select x-model="forms.deployment.template_id" @change="updateDeploymentVars" required>
+                        <option value="">Select a template...</option>
+                        <template x-for="t in templates" :key="t.id">
+                            <option :value="t.id" x-text="t.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Timeout (minutes, 0 = no timeout)</label>
+                    <input type="number" x-model.number="forms.deployment.timeout" min="0" required>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" x-model="forms.deployment.once" id="onceCheck" style="width: auto;">
+                    <label for="onceCheck" style="margin: 0;">Deploy Once (delete after first boot)</label>
+                </div>
+
+                <template x-if="forms.deployment.template_id && getTemplateVars(forms.deployment.template_id).length > 0">
+                    <div class="variables-section">
+                        <h4>Variables</h4>
+                        <template x-for="v in getTemplateVars(forms.deployment.template_id)" :key="v.name">
+                            <div class="form-group">
+                                <label x-text="v.name"></label>
+                                <template x-if="v.type === 'string'">
+                                    <input type="text" x-model="forms.deployment.variables[v.name]" required>
+                                </template>
+                                <template x-if="v.type === 'select'">
+                                    <select x-model="forms.deployment.variables[v.name]" required>
+                                        <template x-for="opt in v.options.split(',')" :key="opt">
+                                            <option :value="opt.trim()" x-text="opt.trim()"></option>
+                                        </template>
+                                    </select>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn" @click="modals.deployment = false">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Deployment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" x-show="modals.template" style="display: none;">
+        <div class="modal modal-lg glass-card" @click.away="modals.template = false">
+            <h2>New Template</h2>
+            <form @submit.prevent="saveTemplate">
+                <div class="form-group">
+                    <label>Template Name</label>
+                    <input type="text" x-model="forms.template.name" required>
+                </div>
+                
+                <div class="variables-editor">
+                    <h4>Variables</h4>
+                    <template x-for="(v, index) in forms.template.variables" :key="index">
+                        <div class="var-row" style="grid-template-columns: 2fr 1fr 2fr 2fr auto;">
+                            <input type="text" x-model="v.name" placeholder="Var Name" required>
+                            <select x-model="v.type">
+                                <option value="string">String</option>
+                                <option value="select">Select</option>
+                            </select>
+                            <input type="text" x-model="v.options" x-show="v.type === 'select'" placeholder="Options (comma separated)">
+                            <input type="text" x-model="v.default" placeholder="Default Value">
+                            <button type="button" class="btn-icon btn-danger" @click="forms.template.variables.splice(index, 1)">✕</button>
+                        </div>
+                    </template>
+                    <button type="button" class="btn btn-sm" @click="forms.template.variables.push({name:'', type:'string', options:'', default:''})">+ Add Variable</button>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label style="margin-bottom: 1rem;">iPXE Script Content (Go Template)</label>
+                    <textarea x-model="forms.template.content" rows="10" required placeholder="#!ipxe&#10;kernel http://example.com/vmlinuz myvar=&#123;&#123;.MyVar&#125;&#125;"></textarea>
+                    <small style="margin-top: 1rem; display: block;">Go Template syntax: <code>&#123;&#123; .VarName &#125;&#125;</code></small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn" @click="modals.template = false">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Template</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" x-show="modals.asset" style="display: none;">
+        <div class="modal glass-card" @click.away="modals.asset = false">
+            <h2>New Text Asset</h2>
+            <form @submit.prevent="saveAssetText">
+                <div class="form-group">
+                    <label>Filename</label>
+                    <input type="text" x-model="forms.asset.filename" required placeholder="preseed.cfg">
+                </div>
+                <div class="form-group">
+                    <label>Content</label>
+                    <textarea x-model="forms.asset.content" rows="10" required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" @click="modals.asset = false">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Asset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
