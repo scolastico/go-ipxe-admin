@@ -10,7 +10,7 @@ const_arch=$(uname -m)
 case "$const_arch" in
     386|i386|i686) const_arch="386" ;;
     amd64|x86_64) const_arch="amd64" ;;
-    arm|armv7l|armv6l) const_arch="arm" ;;
+    armv7l) const_arch="armv7" ;;
     arm64|aarch64) const_arch="arm64" ;;
     *) echo "Unsupported architecture: $const_arch" ; exit 1 ;;
 esac
