@@ -23,7 +23,7 @@ fi
 
 rm -f "$INSTALL_DIR/go-ipxe-admin"
 printf "Do you want to remove the data directory? (y/n) "
-read -r remove_data
+read -r remove_data </dev/tty
 
 if [ "$remove_data" = "y" ]; then
     rm -rf "$INSTALL_DIR/data"

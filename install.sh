@@ -47,11 +47,11 @@ if [ "$UPGRADE" -eq 1 ]; then
 fi
 
 printf "Enter admin username [admin]: "
-read -r ADMIN_USER
+read -r ADMIN_USER </dev/tty
 ADMIN_USER=${ADMIN_USER:-admin}
 
 printf "Enter admin password [admin]: "
-read -r ADMIN_PASS
+read -r ADMIN_PASS </dev/tty
 ADMIN_PASS=${ADMIN_PASS:-admin}
 
 # save environment
