@@ -136,6 +136,7 @@ export ADMIN_PASS
 
 # Start the service
 start_service() {
+    cd "$INSTALL_DIR"
     start_daemon "\$DAEMON"
 }
 
