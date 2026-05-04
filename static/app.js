@@ -73,8 +73,9 @@ function appData() {
         },
 
         async deleteDeployment(ip) {
-            if(confirm('Delete deployment for ' + ip + '?')) {
-                await fetch('/api/deployments/' + ip, { method: 'DELETE' });
+            let encodedIp = ip === '' ? '__all__' : encodeURIComponent(ip);
+            if(confirm('Delete deployment for ' + (ip || 'all IPs') + '?')) {
+                await fetch('/api/deployments/' + encodedIp, { method: 'DELETE' });
                 await this.fetchData();
             }
         },

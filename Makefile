@@ -4,6 +4,7 @@ APP_NAME=go-ipxe-admin
 BUILD_DIR=bin
 
 all: clean build-x64 build-x86 build-arm64 build-armv7
+	ls -lh bin/*
 
 clean:
 	rm -rf $(BUILD_DIR)

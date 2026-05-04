@@ -32,7 +32,7 @@
                 <template x-for="d in deployments" :key="d.ip">
                     <div class="card glass-card">
                         <div class="card-header">
-                            <h3 x-text="d.ip"></h3>
+                            <h3 x-text="d.ip || 'All IPs (Catch-all)'"></h3>
                             <div style="display: flex; gap: 0.5rem;">
                                 <button class="btn-icon" @click="editDeployment(d)">✎</button>
                                 <button class="btn-icon btn-danger" @click="deleteDeployment(d.ip)">✕</button>
@@ -98,7 +98,7 @@
                         <div class="item-info">
                             <h3 x-text="a.filename"></h3>
                             <div class="url-badge">
-                                URL: <code x-text="window.location.origin + '/a/' + a.id + '/' + a.filename"></code>
+                                <code x-text="window.location.origin + '/a/' + a.id + '/' + a.filename"></code>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">

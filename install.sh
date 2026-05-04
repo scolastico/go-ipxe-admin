@@ -6,14 +6,6 @@ else
     INSTALL_DIR="/srv/go-ipxe-admin"
 fi
 
-printf "Enter admin username [admin]: "
-read ADMIN_USER
-ADMIN_USER=${ADMIN_USER:-admin}
-
-printf "Enter admin password [admin]: "
-read ADMIN_PASS
-ADMIN_PASS=${ADMIN_PASS:-admin}
-
 const_arch=$(uname -m)
 case "$const_arch" in
     386|i386|i686) const_arch="386" ;;
@@ -22,11 +14,45 @@ case "$const_arch" in
     arm64|aarch64) const_arch="arm64" ;;
     *) echo "Unsupported architecture: $const_arch" ; exit 1 ;;
 esac
-echo "Installing for architecture $const_arch"
+echo "Detected architecture $const_arch"
 
 mkdir -p "$INSTALL_DIR"
-curl -L "https://raw.githubusercontent.com/scolastico/go-ipxe-admin/main/bin/go-ipxe-admin-linux-$const_arch" -o "$INSTALL_DIR/go-ipxe-admin"
+UPGRADE=0
+if [ -f "$INSTALL_DIR/go-ipxe-admin" ]; then
+    UPGRADE=1
+    if [ -f "/etc/init.d/go-ipxe-admin" ]; then
+        /etc/init.d/go-ipxe-admin stop
+    elif [ -f "/usr/bin/systemctl" ] || [ -f "/bin/systemctl" ]; then
+        systemctl stop go-ipxe-admin
+    else
+        /etc/init.d/go-ipxe-admin stop
+    fi
+    rm -f "$INSTALL_DIR/go-ipxe-admin"
+fi
+
+echo "Downloading go-ipxe-admin for architecture $const_arch..."
+curl -sSL "https://raw.githubusercontent.com/scolastico/go-ipxe-admin/main/bin/go-ipxe-admin-linux-$const_arch" -o "$INSTALL_DIR/go-ipxe-admin"
 chmod +x "$INSTALL_DIR/go-ipxe-admin"
+
+if [ "$UPGRADE" -eq 1 ]; then
+    echo "Restarting go-ipxe-admin..."
+    if [ -f "/etc/init.d/go-ipxe-admin" ]; then
+        /etc/init.d/go-ipxe-admin start
+    elif [ -f "/usr/bin/systemctl" ] || [ -f "/bin/systemctl" ]; then
+        systemctl start go-ipxe-admin
+    else
+        /etc/init.d/go-ipxe-admin start
+    fi
+    exit 0
+fi
+
+printf "Enter admin username [admin]: "
+read ADMIN_USER
+ADMIN_USER=${ADMIN_USER:-admin}
+
+printf "Enter admin password [admin]: "
+read ADMIN_PASS
+ADMIN_PASS=${ADMIN_PASS:-admin}
 
 # save environment
 cat << EOF > "$INSTALL_DIR/.env"

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -79,11 +80,18 @@ func DeleteTemplate(id string) error {
 	return os.Remove(filepath.Join(dataDir, "templates", id+".json"))
 }
 
+func safeIP(ip string) string {
+	if ip == "" {
+		return "_all"
+	}
+	return strings.ReplaceAll(ip, "/", "_cidr_")
+}
+
 func SaveDeployment(d Deployment) error {
 	mu.Lock()
 	defer mu.Unlock()
 	b, _ := json.MarshalIndent(d, "", "  ")
-	return os.WriteFile(filepath.Join(dataDir, "deployments", d.IP+".json"), b, 0644)
+	return os.WriteFile(filepath.Join(dataDir, "deployments", safeIP(d.IP)+".json"), b, 0644)
 }
 
 func LoadDeployments() ([]Deployment, error) {
@@ -108,7 +116,7 @@ func LoadDeployments() ([]Deployment, error) {
 func DeleteDeployment(ip string) error {
 	mu.Lock()
 	defer mu.Unlock()
-	return os.Remove(filepath.Join(dataDir, "deployments", ip+".json"))
+	return os.Remove(filepath.Join(dataDir, "deployments", safeIP(ip)+".json"))
 }
 
 func SaveAssetMeta(a Asset) error {

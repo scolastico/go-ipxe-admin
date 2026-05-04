@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -46,8 +47,35 @@ func (h *Handlers) ServeIPXE(c echo.Context) error {
 	var d *models.Deployment
 	for _, dep := range deps {
 		if dep.IP == ip {
-			d = &dep
+			depCopy := dep
+			d = &depCopy
 			break
+		}
+	}
+
+	if d == nil {
+		for _, dep := range deps {
+			if strings.Contains(dep.IP, "/") {
+				_, ipnet, err := net.ParseCIDR(dep.IP)
+				if err == nil {
+					cip := net.ParseIP(ip)
+					if cip != nil && ipnet.Contains(cip) {
+						depCopy := dep
+						d = &depCopy
+						break
+					}
+				}
+			}
+		}
+	}
+
+	if d == nil {
+		for _, dep := range deps {
+			if dep.IP == "" {
+				depCopy := dep
+				d = &depCopy
+				break
+			}
 		}
 	}
 
@@ -127,6 +155,9 @@ func (h *Handlers) SaveDeployment(c echo.Context) error {
 
 func (h *Handlers) DeleteDeployment(c echo.Context) error {
 	ip := c.Param("ip")
+	if ip == "__all__" {
+		ip = ""
+	}
 	models.DeleteDeployment(ip)
 	return c.NoContent(http.StatusOK)
 }
