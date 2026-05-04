@@ -31,7 +31,7 @@ if [ -f "$INSTALL_DIR/go-ipxe-admin" ]; then
 fi
 
 echo "Downloading go-ipxe-admin for architecture $const_arch..."
-curl -sSL "https://raw.githubusercontent.com/scolastico/go-ipxe-admin/main/bin/go-ipxe-admin-linux-$const_arch" -o "$INSTALL_DIR/go-ipxe-admin"
+curl -L https://github.com/scolastico/go-ipxe-admin/blob/main/bin/go-ipxe-admin-linux-$const_arch -o "$INSTALL_DIR/go-ipxe-admin"
 chmod +x "$INSTALL_DIR/go-ipxe-admin"
 
 if [ "$UPGRADE" -eq 1 ]; then
