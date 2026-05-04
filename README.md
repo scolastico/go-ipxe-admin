@@ -17,7 +17,7 @@ A lightweight, Go-based iPXE deployment dashboard and management server. It prov
 The quickest way to install is using the provided `install.sh` script. It detects your system architecture, downloads the latest binary, and sets it up as a background service.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/scolastico/go-ipxe-admin/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/scolastico/go-ipxe-admin/main/install.sh | bash
 ```
 
 ## Configuration and Usage
